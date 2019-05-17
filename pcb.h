@@ -25,7 +25,7 @@ class PCB
     StackSize stackSize;
     Time timeSlice;
     unsigned *stack;
-
+    STATUS status;
     unsigned started;
     unsigned completed;
     static ID PID;
