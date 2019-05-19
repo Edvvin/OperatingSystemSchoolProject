@@ -4,6 +4,11 @@
 #include "ksem.h"
 #define MAX_PROCESS_COUNT 1000 // TODO: TREBA PROMENITI NA VEKTOR
 
+#define NULL 0
+
+typedef unsigned char IVTNo;
+
+typedef void interrupt(*pointerInterrupt)(...); // Mozda u IVTEntry
 
 enum STATUS{READY, COMPLETED, BLOCKED, SLEEP, CREATED, IDLE};
 
@@ -12,7 +17,7 @@ class PCB
   public:
     void start();
     void waitToComplete();
-    virtual ~PCB() {}
+    virtual ~PCB() {delete[] stack; threads[pid] = NULL;} // TODO: make a good destructor in pcb.cpp
     ID getId();
     static ID getRunningId();
     static Thread *getThreadById(ID id);
@@ -25,13 +30,10 @@ class PCB
     unsigned ss;
     unsigned bp;
 
-    static unsigned tsp;
-    static unsigned tss;
-    static unsigned tbp;
     static unsigned dispatchFlag;
     KernelSem sem;
 
-    void wrapper();
+    static void wrapper();
     void createThread();
     unsigned noTimeSlice();
     static void initIdle();
@@ -48,6 +50,8 @@ class PCB
     Time timeSlice;
     unsigned *stack;
     volatile STATUS status;
+    static pointerInterrupt oldTimer;
+    static const IVTNo IVTNo_TIMER; // Mozda premestiti u IVTEntry
     static ID PID;
     static Thread* (threads[MAX_PROCESS_COUNT]); //TREBA PROMENITI NA VEKTOR
 };

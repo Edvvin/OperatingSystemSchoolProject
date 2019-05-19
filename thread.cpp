@@ -18,7 +18,7 @@ Thread::~Thread(){
     delete myPCB;
 }
 ID Thread::getId(){
-    return myPCB->getID();
+    return myPCB->getId();
 }
 
 ID Thread::getRunningId(){

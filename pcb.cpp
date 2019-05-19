@@ -1,14 +1,22 @@
 #include "pcb.h"
 #include <dos.h>
 #include <stdlib.h>
-
+#include "SCHEDULE.h"
 extern void tick();
 
 ID PCB::PID = 0;
 
 PCB* volatile PCB::running = NULL;
 
+PCB* PCB::idle = NULL;
+
 unsigned PCB::dispatchFlag = 0;
+
+Thread* PCB::threads[1000];
+
+const IVTNo IVTNo_TIMER = 0x08;
+
+pointerInterrupt oldTimer = NULL;
 
 ID PCB::getId(){
     return pid;
@@ -18,7 +26,7 @@ ID PCB::getRunningId(){
     return running->pid;
 }
 
-Thread *getThreadById(ID id){ // TODO: TREBA PROMENITI NA VEKTOR
+Thread* PCB::getThreadById(ID id){ // TODO: TREBA PROMENITI NA VEKTOR
     if(id < 0){
         return NULL;
     }
@@ -80,14 +88,16 @@ void PCB::initIdle(){
 
 void PCB::initMain(){
     running = new PCB(0, 0, NULL);
+    running->status = READY;
 }
 
 void PCB::initTimer(){
-    // TODO:
+    oldTimer = getvect(IVTNo_TIMER);
+	setvect(IVTNo_TIMER, myTimer);
 }
 
 void PCB::restoreTimer(){
-    // TODO: 
+    setvect(IVTNo_TIMER, oldTimer);
 }
 
 void PCB::killIdle(){
@@ -141,12 +151,9 @@ void /*interrupt*/ myTimer(...){
     //Timer stuff
     }
     
-    PCB::tsp = _SP;
-    PCB::tss = _SS;
-    PCB::tbp = _BP;
-    PCB::running->sp = PCB::tsp;
-    PCB::running->ss = PCB::tss;
-    PCB::running->bp = PCB::tbp;
+    PCB::running->sp = _SP;
+    PCB::running->ss = _SS;
+    PCB::running->bp = _BP;
 
     if(PCB::running->status == READY){
         Scheduler::put(PCB::running);
@@ -157,12 +164,12 @@ void /*interrupt*/ myTimer(...){
     if(PCB::running == NULL)
         PCB::running = PCB::idle; // TODO: napravi idle
     
-    PCB::tbp = PCB::running->bp;
-    PCB::tss = PCB::running->ss;
-    PCB::tsp = PCB::running->sp;
-    _BP = PCB::tbp;
-    _SS = PCB::tss;
-    _SP = PCB::tsp;
+    _BP = PCB::running->bp;
+    _SS = PCB::running->ss;
+    _SP = PCB::running->sp;
+     
+    
+     
 
     PCB::dispatchFlag = 0;
 }
