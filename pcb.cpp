@@ -36,7 +36,7 @@ PCB::PCB(StackSize stacksize, Time timeslice, Thread* myThr):sem(0, NULL){
     threads[pid] = myThr; // TODO: TREBA PROMENITI NA VEKTOR
     status = CREATED;
 	stack = NULL;
-    remaining = 0;
+    remaining = timeSlice;
 }
 
 void PCB::start(){
@@ -78,6 +78,26 @@ void PCB::initIdle(){
     idle->status = IDLE;
 }
 
+void PCB::initMain(){
+    running = new PCB(0, 0, NULL);
+}
+
+void PCB::initTimer(){
+    // TODO:
+}
+
+void PCB::restoreTimer(){
+    // TODO: 
+}
+
+void PCB::killIdle(){
+    // TODO: 
+}
+
+void PCB::killMain(){
+    // TODO: 
+}
+
 void PCB::wrapper(){
     running->myThread->run();
     if(running->sem.val() > 0)
@@ -116,6 +136,7 @@ void /*interrupt*/ myTimer(...){
         // TODO: Mozda ovde lockFlag?
         if(PCB::running->remaining > 0)
             return;
+        // TODO: azuriraj contextSwitchFlag
         PCB::running->remaining = PCB::running->timeSlice;
     //Timer stuff
     }

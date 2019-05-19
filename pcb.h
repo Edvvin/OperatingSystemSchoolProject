@@ -36,6 +36,11 @@ class PCB
     unsigned noTimeSlice();
     static void initIdle();
     static void idleRun();
+    static void initMain();
+    static void initTimer();
+    static void restoreTimer();
+    static void killIdle();
+    static void killMain();
     Thread *myThread;
     ID pid;
     StackSize stackSize;
