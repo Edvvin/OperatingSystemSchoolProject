@@ -2,9 +2,11 @@
 #include <dos.h>
 #include <stdlib.h>
 
+extern void tick();
+
 ID PCB::PID = 0;
 
-volatile PCB* PCB::running = NULL;
+PCB* volatile PCB::running = NULL;
 
 unsigned PCB::dispatchFlag = 0;
 
@@ -34,6 +36,7 @@ PCB::PCB(StackSize stacksize, Time timeslice, Thread* myThr):sem(0, NULL){
     threads[pid] = myThr; // TODO: TREBA PROMENITI NA VEKTOR
     status = CREATED;
 	stack = NULL;
+    remaining = 0;
 }
 
 void PCB::start(){
@@ -42,6 +45,11 @@ void PCB::start(){
         Scheduler::put(this);
         status = READY;
     }
+}
+
+
+unsigned PCB::noTimeSlice(){
+    return !timeSlice;
 }
 
 void PCB::createThread(){
@@ -56,32 +64,32 @@ void PCB::createThread(){
 	ss = FP_SEG(stack + stackSize-12);
 }
 
+void PCB::initIdle(){
+    PCB::idle = new PCB(32,1, NULL);
+    idle->stack = new unsigned[idle->stackSize];
+
+	idle->stack[idle->stackSize-1] = 0x200; //PSW, setovan I flag
+
+	idle->stack[idle->stackSize-2] = FP_SEG(PCB::idleRun); //PC
+	idle->stack[idle->stackSize-3] = FP_OFF(PCB::idleRun);
+    // push ax,bx,cx,dx,es,ds,si,di,bp
+	idle->bp = idle->sp = FP_OFF(idle->stack + idle->stackSize-12); 
+	idle->ss = FP_SEG(idle->stack + idle->stackSize-12);
+    idle->status = IDLE;
+}
+
 void PCB::wrapper(){
-    PCB::running->myThread->run();
-    if(PCB::running->sem.val() > 0)
-        PCB::running->sem.signal(-(PCB::running->sem.val()));
-    PCB::running->status = COMPLETED;
-    // TODO: dispatch neki nesto !!!
+    running->myThread->run();
+    if(running->sem.val() > 0)
+        running->sem.signal(-(running->sem.val()));
+    running->status = COMPLETED;
+    dispatch(); // TODO: Proveri je l samo ovo?
 }
 
-
-/*void PCB::wrapper(){
-	Kernel::running->myThread->run();
-	lock
-	Kernel::running->sem.signalAll();
-	delete []Kernel::running->stack;
-	Kernel::running->stack = new unsigned char[24];//alocira se mnogo manji stek, zbog potrebe funkcije blockedDispatch()
-	tsp = FP_OFF(Kernel::running->stack + 23);
-	tss = FP_SEG(Kernel::running->stack + 23);
-	asm{
-		mov sp, tsp // restore sp
-		mov ss, tss
-	}
-	Kernel::running->status = DONE;
-	blockedDispatch();//doneDispatch();// treba da se obrise ovaj PCB i da se pusti neki drugi thread
-	
+void PCB::idleRun(){
+    while(1);
 }
-*/
+
 
 void PCB::waitToComplete(){
     if(status == COMPLETED)
@@ -91,16 +99,27 @@ void PCB::waitToComplete(){
 
 void PCB::dispatch(){
     dispatchFlag = 1;
-    myTimer();
-    PCB::running->sem.signal(0);
+    myTimer(); 
 }
 
 
 // TODO: remove comment
 void /*interrupt*/ myTimer(...){
     if(!PCB::dispatchFlag){
+        tick();
+        //(*PCB::oldTimer)(); TODO: 
+        // TODO: Semafor sleepqueue
+        if(PCB::running->noTimeSlice())
+            return;
+        
+        PCB::running->remaining--;
+        // TODO: Mozda ovde lockFlag?
+        if(PCB::running->remaining > 0)
+            return;
+        PCB::running->remaining = PCB::running->timeSlice;
     //Timer stuff
     }
+    
     PCB::tsp = _SP;
     PCB::tss = _SS;
     PCB::tbp = _BP;

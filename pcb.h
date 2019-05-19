@@ -19,21 +19,27 @@ class PCB
     static void dispatch();
     PCB(StackSize stacksize, Time timeslice, Thread* myThr);
 
-    static volatile PCB* running;
+    static PCB* volatile running;
+    static PCB* idle;
     unsigned sp;
     unsigned ss;
     unsigned bp;
+
     static unsigned tsp;
     static unsigned tss;
     static unsigned tbp;
     static unsigned dispatchFlag;
-    volatile KernelSem sem;
+    KernelSem sem;
 
     void wrapper();
     void createThread();
+    unsigned noTimeSlice();
+    static void initIdle();
+    static void idleRun();
     Thread *myThread;
     ID pid;
     StackSize stackSize;
+    Time remaining;
     Time timeSlice;
     unsigned *stack;
     volatile STATUS status;

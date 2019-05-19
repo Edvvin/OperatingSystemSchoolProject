@@ -7,9 +7,9 @@ class KernelSem
   public:
     KernelSem(int init, Semaphore* myS);
     ~KernelSem();
-    int wait(Time maxTimeToWait) volatile;
-    int signal(int n) volatile;
-    int val() const volatile;
+    int wait(Time maxTimeToWait);
+    int signal(int n);
+    int val() const;
   private:
     Semaphore *mySem;
 };
