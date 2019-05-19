@@ -14,9 +14,11 @@ unsigned PCB::dispatchFlag = 0;
 
 Thread* PCB::threads[1000];
 
-const IVTNo IVTNo_TIMER = 0x08;
+const IVTNo PCB::IVTNo_TIMER = 0x08;
 
-pointerInterrupt oldTimer = NULL;
+pointerInterrupt PCB::oldTimer = NULL;
+
+void interrupt myTimer(...);
 
 ID PCB::getId(){
     return pid;
@@ -137,7 +139,7 @@ void PCB::dispatch(){
 void /*interrupt*/ myTimer(...){
     if(!PCB::dispatchFlag){
         tick();
-        //(*PCB::oldTimer)(); TODO: 
+        (*PCB::oldTimer)();
         // TODO: Semafor sleepqueue
         if(PCB::running->noTimeSlice())
             return;
@@ -162,7 +164,7 @@ void /*interrupt*/ myTimer(...){
     PCB::running = Scheduler::get();
 
     if(PCB::running == NULL)
-        PCB::running = PCB::idle; // TODO: napravi idle
+        PCB::running = PCB::idle;
     
     _BP = PCB::running->bp;
     _SS = PCB::running->ss;
