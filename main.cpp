@@ -1,5 +1,3 @@
-#include "system.h"
-#include <iostream.h>
 #include <dos.h>
 #include "pcb.h"
 extern int userMain(int argc, char* argv[]);
@@ -19,7 +17,7 @@ int main(int argc, char* argv[]){
 }
 
 void initSystem(){
-    PCB::initMainPCB();
+    PCB::initMain();
     PCB::initIdle();
 
     PCB::initTimer();

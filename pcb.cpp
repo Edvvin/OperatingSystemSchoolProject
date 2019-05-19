@@ -91,11 +91,11 @@ void PCB::restoreTimer(){
 }
 
 void PCB::killIdle(){
-    // TODO: 
+    delete idle;
 }
 
 void PCB::killMain(){
-    // TODO: 
+    delete running;
 }
 
 void PCB::wrapper(){
