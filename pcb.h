@@ -1,7 +1,9 @@
 #ifndef _pcb_h
 #define _pcb_h_
 #include "thread.h"
-#define MAX_PROCESS_COUNT 1000 //TREBA PROMENITI NA VEKTOR
+#include "ksem.h"
+#define MAX_PROCESS_COUNT 1000 // TODO: TREBA PROMENITI NA VEKTOR
+
 
 enum STATUS{READY, COMPLETED, BLOCKED, SLEEP, CREATED, IDLE};
 
@@ -16,20 +18,26 @@ class PCB
     static Thread *getThreadById(ID id);
     static void dispatch();
     PCB(StackSize stacksize, Time timeslice, Thread* myThr);
-  private:
+
+    static volatile PCB* running;
+    unsigned sp;
+    unsigned ss;
+    unsigned bp;
+    static unsigned tsp;
+    static unsigned tss;
+    static unsigned tbp;
+    static unsigned dispatchFlag;
+    volatile KernelSem sem;
+
     void wrapper();
     void createThread();
     Thread *myThread;
     ID pid;
-
     StackSize stackSize;
     Time timeSlice;
     unsigned *stack;
-    STATUS status;
-    unsigned started;
-    unsigned completed;
+    volatile STATUS status;
     static ID PID;
-    static PCB* running;
     static Thread* (threads[MAX_PROCESS_COUNT]); //TREBA PROMENITI NA VEKTOR
 };
 #endif
