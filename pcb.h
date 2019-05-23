@@ -4,7 +4,9 @@
 #include "ksem.h"
 #define MAX_PROCESS_COUNT 1000 // TODO: TREBA PROMENITI NA VEKTOR
 
+#ifndef NULL
 #define NULL 0
+#endif
 
 typedef unsigned char IVTNo;
 
