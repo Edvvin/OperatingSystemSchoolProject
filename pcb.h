@@ -1,5 +1,5 @@
-#ifndef _pcb_h
-#define _pcb_h
+#ifndef _pcb_h_
+#define _pcb_h_
 #include "thread.h"
 #include <stdlib.h>
 

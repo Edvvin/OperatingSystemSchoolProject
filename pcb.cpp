@@ -148,8 +148,7 @@ void PCB::dispatch(){
 }
 
 
-// TODO: remove comment
-void /*interrupt*/ myTimer(...){
+void interrupt myTimer(...){
     if(!PCB::dispatchFlag){
         tick();
         (*PCB::oldTimer)();

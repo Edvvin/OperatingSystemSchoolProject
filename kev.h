@@ -1,6 +1,9 @@
 #ifndef _kev_h_
 #define _kev_h_
 #include "event.h"
+
+class KernelSem;
+class PCB;
 class KernelEv
 {
   public:
@@ -8,7 +11,9 @@ class KernelEv
     ~KernelEv();
     void wait();
     void signal();
-  private:
     Event *myEvent;
+    KernelSem* sem;
+    PCB* maker;
+    IVTNo ivtNo;
 };
 #endif
