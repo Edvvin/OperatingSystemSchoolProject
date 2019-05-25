@@ -28,7 +28,7 @@ void KernelSem::block(Time maxTimeToWait){
     //lock
     PCB::running->status = BLOCKED;
     if(maxTimeToWait)
-        KernelSem::sleepQ.add(sqe);
+        PCB::sleepQ.add(sqe);
     semq.put(qe);
     dispatch();
     //unlock

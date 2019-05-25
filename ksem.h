@@ -20,6 +20,5 @@ class KernelSem
     Semaphore *mySem;
     int value;
     SemQueue semq;
-    static SleepQueue sleepQ;
 };
 #endif
