@@ -4,23 +4,22 @@
 #include "pcb.h"
 
 class PCB;
+struct SleepQueueElement;
+
+struct QueueElement{
+	PCB *val;
+	unsigned valid;
+	SleepQueueElement* pair;
+	QueueElement *next;
+};
 
 class SemQueue{
-	struct Elem{
-		PCB *val;
-		Elem *next;
-	};
-
-	Elem *first, *end;
-	int len;
+	QueueElement *first, *end;
 public:
 	SemQueue();
 	~SemQueue();
-
-	void insert(PCB *pcb);
-	PCB* remove();
-
-	int size() const;
+	void put(QueueElement *qe);
+	QueueElement* get();
 };
 
 #endif

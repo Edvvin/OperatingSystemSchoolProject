@@ -2,7 +2,11 @@
 #include <dos.h>
 #include <stdlib.h>
 #include "SCHEDULE.h"
+#include "sleepqueue.h"
+
 extern void tick();
+
+SleepQueue PCB::sleepQ;
 
 ID PCB::PID = 0;
 
@@ -47,6 +51,7 @@ PCB::PCB(StackSize stacksize, Time timeslice, Thread* myThr):sem(0, NULL){
     status = CREATED;
 	stack = NULL;
     remaining = timeSlice;
+    signaled = 1;
 }
 
 void PCB::start(){
@@ -124,6 +129,8 @@ void PCB::idleRun(){
 
 
 void PCB::waitToComplete(){
+    if(this == PCB::running)
+        return;
     if(status == COMPLETED)
         return;
     sem.wait(0);
@@ -140,7 +147,7 @@ void /*interrupt*/ myTimer(...){
     if(!PCB::dispatchFlag){
         tick();
         (*PCB::oldTimer)();
-        // TODO: Semafor sleepqueue
+        PCB::sleepQ.awaken();
         if(PCB::running->noTimeSlice())
             return;
         

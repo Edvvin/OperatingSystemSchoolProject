@@ -2,11 +2,14 @@
 #define _pcb_h_
 #include "thread.h"
 #include "ksem.h"
+
 #define MAX_PROCESS_COUNT 1000 // TODO: TREBA PROMENITI NA VEKTOR
 
 #ifndef NULL
 #define NULL 0
 #endif
+
+class SleepQueue;
 
 typedef unsigned char IVTNo;
 
@@ -52,9 +55,11 @@ class PCB
     Time timeSlice;
     unsigned *stack;
     volatile STATUS status;
+    volatile unsigned signaled;
     static pointerInterrupt oldTimer;
     static const IVTNo IVTNo_TIMER; // Mozda premestiti u IVTEntry
     static ID PID;
     static Thread* (threads[MAX_PROCESS_COUNT]); //TREBA PROMENITI NA VEKTOR
+    static SleepQueue sleepQ;
 };
 #endif

@@ -11,13 +11,15 @@
 class KernelSem
 {
   public:
-    KernelSem(int init, Semaphore* myS);
-    ~KernelSem();
+    KernelSem(int init, Semaphore* myS): value(init), mySem(myS){}
+    ~KernelSem(){if(value<0)signal(-value);}
     int wait(Time maxTimeToWait);
     int signal(int n);
     int val() const;
+    void block(Time maxTimeToWait);
     Semaphore *mySem;
-    friend class SleepQueue;
     int value;
+    SemQueue semq;
+    static SleepQueue sleepQ;
 };
 #endif

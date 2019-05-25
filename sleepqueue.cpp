@@ -1,13 +1,14 @@
 #include "sleepqueue.h"
 #include "pcb.h"
 #include "semqueue.h"
+#include "SCHEDULE.h"
 
 SleepQueue::SleepQueue(){
     first = NULL;
 }
 
 SleepQueue::~SleepQueue(){
-	Elem *t = first;
+	SleepQueueElement *t = first;
 	while(t != NULL){
 		t = first;
 		first = first->next;
@@ -17,51 +18,51 @@ SleepQueue::~SleepQueue(){
 }
 
 //TODO: prekontrolisi
-void SleepQueue::addThread(PCB* waitingThread, Time t){
-    Elem* newElem = new Elem(waitingThread,t);
-    Elem* temp = first;
-    Elem* pred = NULL;
+void SleepQueue::add(SleepQueueElement* newElem){
+    SleepQueueElement* temp = first;
+    SleepQueueElement* pred = NULL;
     if(!first){
         first = newElem;
-    }
-    else{
+    }else{
         while(temp){
-            if(newElem->time > temp->time){
+            if(newElem->time >= temp->time){
                 pred = temp;
                 newElem->time -= temp->time;
                 temp = temp->next;
-            }
-            else{
+            }else{
                 newElem->next = temp;
                 temp->time -= newElem->time;
-                if(pred == 0){
-                first = newElem;
-            }else{
-                pred->next = newElem;
-            }
-            break;
+                if(pred == NULL){
+                    first = newElem;
+                }else{
+                    pred->next = newElem;
+                }
+                break;
             }
         }
         if(!temp){
             pred->next = newElem;
+            newElem->next = NULL;
         }
     }
 }
 
-void SleepQueue::decrease(){
+void SleepQueue::awaken(){
     if(!first)
         return;
     first->time--;
     while(first->time == 0){
-        Elem* temp = first;
+        SleepQueueElement* temp = first;
         first = first->next;
-        semq.insert(temp->waitingThread);
+        if(temp->valid){
+            temp->sem->value++;
+            temp->pair->valid = 0;
+            temp->val->status = READY;
+            temp->val->signaled = 0;
+            Scheduler::put(temp->val);
+        }
         delete temp;
         if(!first)
             return;
     }
-}
-
-PCB* SleepQueue::get(){
-    return semq.remove();
 }

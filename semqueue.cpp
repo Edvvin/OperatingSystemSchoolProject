@@ -3,13 +3,11 @@
 #include <stdlib.h>
 
 SemQueue::SemQueue(){
-	len = 0;
 	first = end = NULL;
 }
 
 SemQueue::~SemQueue(){
-	len = 0;
-	Elem *t = first;
+	QueueElement *t = first;
 	while(t != NULL){
 		t = first;
 		first = first->next;
@@ -18,29 +16,21 @@ SemQueue::~SemQueue(){
 	first = end = NULL;
 }
 
-void SemQueue::insert(PCB *pcb){
-	if(len++ == 0){
-		first = end = new Elem();
+void SemQueue::put(QueueElement *qe){
+	qe->next = NULL;
+	if(first == NULL){
+		first = end = qe;
 	}
 	else{
-		end = end->next = new Elem();
+		end = end->next = qe;
 	}
-	end->val = pcb;
-	end->next = NULL;
 }
 
-PCB* SemQueue::remove(){
-	if(len == 0)
+QueueElement* SemQueue::get(){
+	if(first == NULL)
 		return NULL;
-	len--;
-	PCB *p = first->val;
-	Elem *t = first;
-	first = first->next;
-	delete t;
+	QueueElement *p = first;
+	first = p->next;
+	p->next = NULL;
 	return p;
 }
-
-int SemQueue::size() const{
-	return len;
-}
-
