@@ -4,9 +4,6 @@
 #include "thread.h"
 #include "pcb.h"
 
-#ifndef NULL
-#define NULL 0
-#endif
 
 class KernelSem
 {

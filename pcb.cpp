@@ -2,7 +2,7 @@
 #include <dos.h>
 #include <stdlib.h>
 #include "SCHEDULE.h"
-#include "sleepqueue.h"
+#include "slpqueue.h"
 
 extern void tick();
 

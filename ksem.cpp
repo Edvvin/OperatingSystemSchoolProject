@@ -1,6 +1,6 @@
 #include "ksem.h"
 #include "semqueue.h"
-#include "sleepqueue.h"
+#include "slpqueue.h"
 
 int KernelSem::wait(Time maxTimeToWait){
     if(--value<0){

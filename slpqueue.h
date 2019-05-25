@@ -3,9 +3,6 @@
 
 class SemQueue;
 
-#ifndef NULL
-#define NULL 0
-#endif
 
 struct SleepQueueElement{
     Time time;

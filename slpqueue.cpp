@@ -1,4 +1,4 @@
-#include "sleepqueue.h"
+#include "slpqueue.h"
 #include "pcb.h"
 #include "semqueue.h"
 #include "SCHEDULE.h"
