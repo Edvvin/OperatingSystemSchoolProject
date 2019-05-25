@@ -1,6 +1,6 @@
 #include "ksem.h"
-#include "semqueue.h"
 #include "slpqueue.h"
+#include "SCHEDULE.H"
 
 int KernelSem::wait(Time maxTimeToWait){
     if(--value<0){
@@ -61,4 +61,8 @@ int KernelSem::signal(int n){
 	}
     //unlock
     return 0;
+}
+
+int KernelSem::val() const{
+    return value;
 }

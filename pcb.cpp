@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "SCHEDULE.h"
 #include "slpqueue.h"
+#include "ksem.h"
 
 extern void tick();
 
@@ -42,7 +43,8 @@ Thread* PCB::getThreadById(ID id){ // TODO: TREBA PROMENITI NA VEKTOR
     return threads[id];
 }
 
-PCB::PCB(StackSize stacksize, Time timeslice, Thread* myThr):sem(0, NULL){
+PCB::PCB(StackSize stacksize, Time timeslice, Thread* myThr){
+    sem = new KernelSem(0,0);
     stackSize = (stacksize + 1)/2; // stackSize promenjiva broji reci a ne bajtove
     timeSlice = timeslice;
     myThread = myThr;
@@ -54,11 +56,17 @@ PCB::PCB(StackSize stacksize, Time timeslice, Thread* myThr):sem(0, NULL){
     signaled = 1;
 }
 
+PCB::~PCB(){
+    delete[] stack;
+    threads[pid] = NULL;
+    delete sem;
+}
+
 void PCB::start(){
     if(status == CREATED){
         createThread();
-        Scheduler::put(this);
         status = READY;
+        Scheduler::put(this);
     }
 }
 
@@ -117,10 +125,10 @@ void PCB::killMain(){
 
 void PCB::wrapper(){
     running->myThread->run();
-    if(running->sem.val() > 0)
-        running->sem.signal(-(running->sem.val()));
+    if(running->sem->val() < 0)
+        running->sem->signal(-(running->sem->val()));
     running->status = COMPLETED;
-    dispatch(); // TODO: Proveri je l samo ovo?
+    dispatch();
 }
 
 void PCB::idleRun(){
@@ -129,11 +137,9 @@ void PCB::idleRun(){
 
 
 void PCB::waitToComplete(){
-    if(this == PCB::running)
+    if(this == PCB::running || status == CREATED || status == COMPLETED)
         return;
-    if(status == COMPLETED)
-        return;
-    sem.wait(0);
+    sem->wait(0);
 }
 
 void PCB::dispatch(){

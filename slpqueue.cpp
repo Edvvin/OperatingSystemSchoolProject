@@ -2,6 +2,7 @@
 #include "pcb.h"
 #include "semqueue.h"
 #include "SCHEDULE.h"
+#include "ksem.h"
 
 SleepQueue::SleepQueue(){
     first = NULL;

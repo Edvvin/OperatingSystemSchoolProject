@@ -1,9 +1,7 @@
 #ifndef _ksem_h_
 #define _ksem_h_
 #include "semaphor.h"
-#include "thread.h"
-#include "pcb.h"
-
+#include "semqueue.h"
 
 class KernelSem
 {

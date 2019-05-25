@@ -2,7 +2,7 @@
 #include "pcb.h"
 
 class SemQueue;
-
+class QueueElement;
 
 struct SleepQueueElement{
     Time time;

@@ -1,12 +1,14 @@
 #ifndef _pcb_h
-#define _pcb_h_
+#define _pcb_h
 #include "thread.h"
-#include "ksem.h"
+#include <stdlib.h>
 
 #define MAX_PROCESS_COUNT 1000 // TODO: TREBA PROMENITI NA VEKTOR
 
 
 class SleepQueue;
+class Thread;
+class KernelSem;
 
 typedef unsigned char IVTNo;
 
@@ -19,7 +21,7 @@ class PCB
   public:
     void start();
     void waitToComplete();
-    virtual ~PCB() {delete[] stack; threads[pid] = NULL;} // TODO: make a good destructor in pcb.cpp
+    virtual ~PCB();
     ID getId();
     static ID getRunningId();
     static Thread *getThreadById(ID id);
@@ -33,7 +35,7 @@ class PCB
     unsigned bp;
 
     static unsigned dispatchFlag;
-    KernelSem sem;
+    KernelSem* sem;
 
     static void wrapper();
     void createThread();
