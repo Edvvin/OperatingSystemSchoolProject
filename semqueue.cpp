@@ -7,8 +7,8 @@ SemQueue::SemQueue(){
 }
 
 SemQueue::~SemQueue(){
-	QueueElement *t = first;
-	while(t != NULL){
+	Element *t = first;
+	while(first != NULL){
 		t = first;
 		first = first->next;
 		delete t;
@@ -16,7 +16,10 @@ SemQueue::~SemQueue(){
 	first = end = NULL;
 }
 
-void SemQueue::put(QueueElement *qe){
+void SemQueue::put(PCB* thread){
+	Element* qe = new Element();
+	qe->val = thread;
+	qe->next = NULL;
 	qe->next = NULL;
 	if(first == NULL){
 		first = end = qe;
@@ -26,11 +29,12 @@ void SemQueue::put(QueueElement *qe){
 	}
 }
 
-QueueElement* SemQueue::get(){
+PCB* SemQueue::get(){
 	if(first == NULL)
 		return NULL;
-	QueueElement *p = first;
+	Element *p = first;
 	first = p->next;
-	p->next = NULL;
-	return p;
+	PCB* ret = p->val;
+	delete p;
+	return ret;
 }

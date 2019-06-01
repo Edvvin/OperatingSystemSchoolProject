@@ -1,15 +1,89 @@
 #include "ksem.h"
 #include "slpqueue.h"
 #include "SCHEDULE.H"
-
+#include "ksemlist.h"
+#include "assert.h"
+#include "lock.h"
+KernelSem::KernelSem(int init, Semaphore* myS): value(init), mySem(myS){
+    PCB::kSemList->put((KernelSem*)this);
+}
+KernelSem::~KernelSem(){
+    if(value<0)signal(-value);
+    KSemList::Iterator it = PCB::kSemList->getIterator();
+    while(!it.end()){
+        if(it.get() == this){
+            it.remove();
+            break;
+        }
+        it.next();
+    }
+}
 int KernelSem::wait(Time maxTimeToWait){
+    assert(PCB::lockFlag == 0);
+    lock
     if(--value<0){
         PCB::running->signaled = 1;
 		block(maxTimeToWait);
+        unlockDispatch
+        return PCB::running->signaled;
 	}
-    return PCB::running->signaled;
+    unlock
+    return 1;
 }
 
+void KernelSem::block(Time maxTimeToWait){
+    PCB::running->status = BLOCKED;
+    if(maxTimeToWait){
+        sleepQ.add(PCB::running,maxTimeToWait);
+    }else{
+        semq.put(PCB::running);
+    }
+}
+
+int KernelSem::signal(int n){
+    if(n<0)
+        return n;
+    int cnt = 0;
+    if(n > 0){
+        lock
+        while(cnt < n && value<0){
+            value++;
+            cnt++;
+            PCB* thread = semq.get();
+            if(!thread){
+                thread = sleepQ.getFirst();
+            }
+            assert(thread != NULL); // TODO: ukoni
+            thread->status = READY;
+            assert(thread->signaled == 1); // TODO: ukolni
+            Scheduler::put(thread);
+        }
+        value += n-cnt;
+        unlock
+    }else{
+        lock
+        if(value++<0){
+            PCB* thread = semq.get();
+            if(!thread){
+                thread = sleepQ.getFirst();
+            }
+            assert(thread != NULL); // TODO: ukolni
+            thread->status = READY;
+            assert(thread->signaled == 1); // TODO: ukolni
+            Scheduler::put(thread);
+        }
+        unlock
+    }
+    return cnt;
+}
+
+
+int KernelSem::val() const{
+    return value;
+}
+
+
+/*
 void KernelSem::block(Time maxTimeToWait){
     QueueElement* qe = new QueueElement();
     qe->val = PCB::running;
@@ -62,7 +136,4 @@ int KernelSem::signal(int n){
     //unlock
     return 0;
 }
-
-int KernelSem::val() const{
-    return value;
-}
+*/

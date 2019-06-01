@@ -6,8 +6,8 @@
 class KernelSem
 {
   public:
-    KernelSem(int init, Semaphore* myS): value(init), mySem(myS){}
-    ~KernelSem(){if(value<0)signal(-value);}
+    KernelSem(int init, Semaphore* myS);
+    ~KernelSem();
     int wait(Time maxTimeToWait);
     int signal(int n);
     int val() const;
@@ -15,5 +15,6 @@ class KernelSem
     Semaphore *mySem;
     int value;
     SemQueue semq;
+    SleepQueue sleepQ;
 };
 #endif

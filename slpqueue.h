@@ -4,22 +4,19 @@
 class SemQueue;
 class QueueElement;
 
-struct SleepQueueElement{
+class SleepQueue{
+  struct Element{
     Time time;
     PCB* val;
-    unsigned valid;
-    QueueElement* pair;
-    KernelSem* sem;
-    SleepQueueElement* next;
-};
-
-
-class SleepQueue{
+    Element* next;
+  };
   public:
     SleepQueue();
     ~SleepQueue();
-    void add(SleepQueueElement* newElem);
-    void awaken();
+    void add(PCB* thread, Time t);
+    unsigned awaken();
+    unsigned awakenAll();
+    PCB* getFirst();
   private:
-    SleepQueueElement* first;
+    Element *first;
 };

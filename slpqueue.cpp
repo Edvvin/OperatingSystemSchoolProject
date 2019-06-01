@@ -9,8 +9,8 @@ SleepQueue::SleepQueue(){
 }
 
 SleepQueue::~SleepQueue(){
-	SleepQueueElement *t = first;
-	while(t != NULL){
+	Element *t = first;
+	while(first != NULL){
 		t = first;
 		first = first->next;
 		delete t;
@@ -19,9 +19,12 @@ SleepQueue::~SleepQueue(){
 }
 
 //TODO: prekontrolisi
-void SleepQueue::add(SleepQueueElement* newElem){
-    SleepQueueElement* temp = first;
-    SleepQueueElement* pred = NULL;
+void SleepQueue::add(PCB* thread, Time t){
+    Element* newElem = new Element();
+    newElem->val = thread;
+    newElem->time = t;
+    Element* temp = first;
+    Element* pred = NULL;
     if(!first){
         first = newElem;
     }else{
@@ -48,22 +51,48 @@ void SleepQueue::add(SleepQueueElement* newElem){
     }
 }
 
-void SleepQueue::awaken(){
+unsigned SleepQueue::awaken(){
     if(!first)
-        return;
+        return 0;
     first->time--;
+    unsigned cnt = 0;
     while(first->time == 0){
-        SleepQueueElement* temp = first;
+        Element* temp = first;
         first = first->next;
-        if(temp->valid){
-            temp->sem->value++;
-            temp->pair->valid = 0;
-            temp->val->status = READY;
-            temp->val->signaled = 0;
-            Scheduler::put(temp->val);
-        }
+        temp->val->status = READY;
+        temp->val->signaled = 0;
+        Scheduler::put(temp->val);
+        cnt++;
         delete temp;
         if(!first)
-            return;
+            break;
     }
+    return cnt;
+}
+
+unsigned SleepQueue::awakenAll(){
+    Element *temp = first;
+    unsigned cnt = 0;
+	while(first != NULL){
+		temp = first;
+		first = first->next;
+        temp->val->status = READY;
+        temp->val->signaled = 0;
+        Scheduler::put(temp->val);
+        cnt++;
+        delete temp;
+	}
+	return cnt;
+}
+
+PCB* SleepQueue::getFirst(){
+    if(first){
+        PCB* ret = first->val;
+        if(first->next){
+            first->next->time += first->time;
+        }
+        first = first->next;
+        return ret;
+    }
+    return NULL;
 }

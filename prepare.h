@@ -6,15 +6,15 @@
 #include "pcb.h"
 #include "schedule.h"
 
-#define PREPAREENTRY(ivtNo, old)\
+#define PREPAREENTRY(ivtNo, x)\
 	void interrupt Ievent##ivtNo(...);\
 	\
 	static IVTEntry Ientry##ivtNo = IVTEntry(ivtNo, Ievent##ivtNo);\
 	\
 	void interrupt Ievent##ivtNo(...){\
 		Ientry##ivtNo.signal();\
-		if(old)\
-			Ientry##ivtNo.callold();\
+		if(x)\
+			Ientry##ivtNo.old();\
 		PCB::dispatch();\
     }
 

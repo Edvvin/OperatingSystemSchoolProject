@@ -4,6 +4,11 @@
 #include "SCHEDULE.h"
 #include "slpqueue.h"
 #include "ksem.h"
+#include "sighandl.h"
+#include "signalq.h"
+#include "lock.h"
+#include "ksemlist.h"
+#include "pcblst.h"
 
 extern void tick();
 
@@ -17,13 +22,20 @@ PCB* PCB::idle = NULL;
 
 unsigned PCB::dispatchFlag = 0;
 
-Thread* PCB::threads[1000];
-
 const IVTNo PCB::IVTNo_TIMER = 0x08;
 
 pointerInterrupt PCB::oldTimer = NULL;
 
+unsigned PCB::globBlocked[MAX_SIGNAL_COUNT];
+
+KSemList* kSemList = NULL;
+PCBList* pcbList = NULL;
+
+volatile unsigned lockFlag = 0;
+volatile unsigned contextSwitchFlag = 0;
+volatile unsigned signalFlag = 0;
 void interrupt myTimer(...);
+void interrupt killer(...);
 
 ID PCB::getId(){
     return pid;
@@ -33,14 +45,20 @@ ID PCB::getRunningId(){
     return running->pid;
 }
 
-Thread* PCB::getThreadById(ID id){ // TODO: TREBA PROMENITI NA VEKTOR
-    if(id < 0){
-        return NULL;
+Thread* PCB::getThreadById(ID id){
+    PCBList::Iterator it = PCB::pcbList->getIterator();
+    PCB* ret = NULL;
+    while(!it.end()){
+        if(it.get()->pid == id){
+            ret = it.get();
+            break;
+        }
+        it.next();
     }
-    if(threads[id] == NULL){
-        return NULL; // Mozda niz threads nije inicijalizovan na 0
+    if(ret){
+        return ret->myThread;
     }
-    return threads[id];
+    return NULL;
 }
 
 PCB::PCB(StackSize stacksize, Time timeslice, Thread* myThr){
@@ -49,17 +67,41 @@ PCB::PCB(StackSize stacksize, Time timeslice, Thread* myThr){
     timeSlice = timeslice;
     myThread = myThr;
     pid = PID++;
-    threads[pid] = myThr; // TODO: TREBA PROMENITI NA VEKTOR
     status = CREATED;
 	stack = NULL;
     remaining = timeSlice;
     signaled = 1;
+    parent = PCB::running;
+    for(int i = 0;i < MAX_SIGNAL_COUNT; i++){
+        if(parent){
+            blocked[i] = parent->blocked[i];
+            regs[i] = parent->regs[i]->copy();
+        }
+        else{
+            blocked[i] = 0;
+            regs[i] = new SignalHandlerList();
+        }
+    }
+    signalQueue = new SignalQueue();
+    regs[0]->reg(PCB::signal0);
+    PCB::pcbList->put((PCB*)this);
 }
 
 PCB::~PCB(){
     delete[] stack;
-    threads[pid] = NULL;
     delete sem;
+    for(int i = 0;i < MAX_SIGNAL_COUNT; i++){
+        delete regs[i];
+    }
+    delete signalQueue;
+    PCBList::Iterator it = PCB::pcbList->getIterator();
+    while(!it.end()){
+        if(it.get() == this){
+            it.remove();
+            break;
+        }
+        it.next();
+    }
 }
 
 void PCB::start(){
@@ -125,9 +167,23 @@ void PCB::killMain(){
 
 void PCB::wrapper(){
     running->myThread->run();
+    finalize();
+}
+
+void PCB::signal0(){
+    if(!PCB::running->parent){
+        return;
+    }
+    killer();
+}
+
+void PCB::finalize(){
     if(running->sem->val() < 0)
         running->sem->signal(-(running->sem->val()));
     running->status = COMPLETED;
+    if(PCB::running->parent)
+        PCB::running->parent->systemSignal(1);
+    PCB::running->systemSignal(2);
     dispatch();
 }
 
@@ -143,28 +199,47 @@ void PCB::waitToComplete(){
 }
 
 void PCB::dispatch(){
+    if(signalFlag)
+        return;
     dispatchFlag = 1;
     myTimer(); 
 }
 
+void interrupt killer(...){
+    PCB::signalFlag = 0;
+	PCB::running->stack[PCB::running->stackSize-1] = 0x200; //PSW, setovan I flag
+	PCB::running->stack[PCB::running->stackSize-2] = FP_SEG(PCB::finalize); //PC
+	PCB::running->stack[PCB::running->stackSize-3] = FP_OFF(PCB::finalize);
+    // push ax,bx,cx,dx,es,ds,si,di,bp
+	_SP = FP_OFF(stack + PCB::running->stackSize-12);
+    _BP = _SP;
+	_SS = FP_SEG(stack + PCB::running->stackSize-12);
+}
 
 void interrupt myTimer(...){
     if(!PCB::dispatchFlag){
         tick();
         (*PCB::oldTimer)();
+        KSemList::Iterator it = PCB::kSemList->getIterator();
+        while(!it.end()){
+            KernelSem* ksem = it.get();
+            unsigned cnt = ksem->sleepQ.awaken();
+            ksem->value += cnt;
+            it.next();
+        }
         PCB::sleepQ.awaken();
         if(PCB::running->noTimeSlice())
             return;
-        
         PCB::running->remaining--;
-        // TODO: Mozda ovde lockFlag?
         if(PCB::running->remaining > 0)
             return;
-        // TODO: azuriraj contextSwitchFlag
         PCB::running->remaining = PCB::running->timeSlice;
     //Timer stuff
     }
-    
+    if(PCB::lockFlag){
+        contextSwitchFlag = 1;
+        return;
+    }
     PCB::running->sp = _SP;
     PCB::running->ss = _SS;
     PCB::running->bp = _BP;
@@ -182,8 +257,108 @@ void interrupt myTimer(...){
     _SS = PCB::running->ss;
     _SP = PCB::running->sp;
      
-    
-     
-
     PCB::dispatchFlag = 0;
+
+    PCB::lockFlag++;
+    asm sti;
+    PCB::handle();
+    asm cli;
+    PCB::lockFlag--;
+}
+
+
+void PCB::signal(SignalId signal){
+    if(signal >= MAX_SIGNAL_COUNT)
+        return;
+    if(signal == 1 || signal == 2)
+        return;
+    signalQueue->put(signal);
+    if(PCB::running == this && !signalFlag)
+        PCB::handle();
+}
+
+void PCB::systemSignal(SignalID signal){
+    signalQueue->put(signal);
+    if(PCB::running == this  && !signalFlag ) //TODO: PROVERI OVO
+        PCB::handle();
+}
+
+void PCB::registerHandler(SignalId signal, SignalHandler handler){
+    if(signal == 0)
+        return;
+    regs[signal]->reg(handler);
+}
+
+void PCB::unregisterAllHandlers(SignalId id){
+    if(id == 0)
+        return;
+    regs[id]->unreg();
+}
+
+void PCB::swap(SignalId id, SignalHandler hand1, SignalHandler hand2){
+    regs[signal]->swap(hand1,hand2);
+}
+
+void PCB::blockSignal(SignalId signal){
+    blocked[signal] = 1;
+}
+
+void PCB::blockSignalGlobally(SignalId signal){
+    globBlocked[signal] = 1;
+}
+
+void PCB::unblockSignal(SignalId signal){
+    blocked[signal] = 0;
+    if(PCB::running == this && !signalFlag)
+        PCB::handle();
+}
+
+void PCB::unblockSignalGlobally(SignalId signal){
+    globBlocked[signal] = 0;
+    if(PCB::running == this && !signalFlag)
+        PCB::handle();
+}
+
+void PCB::handle(){
+    PCB::signalFlag = 1;
+    SignalQueue::Iterator it = PCB::running->signalQueue->getIterator();
+    while(!it.end()) {
+        SignalId signal = it.get();
+        if(!PCB::globBlocked[signal] && !PCB::running->blocked[signal]){
+            PCB::running->regs[signal]->invoke();
+            it.remove();
+        }else{
+            it.next();
+        }
+    }
+    PCB::signalFlag = 0;
+}
+
+void PCB::initSystem(){
+    PCB::kSemList = new KSemList();
+    PCB::pcbList = new PCBList();
+    PCB::initMain();
+    PCB::initIdle();
+
+    PCB::initTimer();
+}
+
+void PCB::restoreSystem(){
+    PCB::restoreTimer();
+
+    // TODO: IVTEntry restore
+    PCB::killIdle();
+    PCB::killMain();
+    KSemList::Iterator it = kSemList->getIterator();
+    while(!it.end()){
+        delete it.get();
+        it.remove();
+    }
+    delete kSemList;
+    PCBList::Iterator it = pcbList->getIterator();
+    while(!it.end()){
+        delete it.get();
+        it.remove();
+    }
+    delete pcbList;
 }
