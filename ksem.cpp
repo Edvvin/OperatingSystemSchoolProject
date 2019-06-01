@@ -51,7 +51,7 @@ int KernelSem::signal(int n){
         QueueElement* e = semq.get();
         while(!e->valid){
             delete e;
-            QueueElement* e = semq.get();
+            e = semq.get();
         }
         if(e->pair)
             e->pair->valid = 0;

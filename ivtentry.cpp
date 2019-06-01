@@ -6,7 +6,7 @@
 IVTEntry* IVTEntry::entries[IVT_SIZE];
 
 IVTEntry::IVTEntry(IVTNo ivtNo, pointerInterrupt newInterrupt):ev(NULL){
-    entries[ev->ivtNo] = (IVTEntry*)this;
+    entries[ivtNo] = (IVTEntry*)this;
     oldInterrupt = getvect(ivtNo);
 	setvect(ivtNo, newInterrupt);
 }

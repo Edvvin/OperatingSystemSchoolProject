@@ -14,7 +14,7 @@
 	void interrupt Ievent##ivtNo(...){\
 		Ientry##ivtNo.signal();\
 		if(old)\
-			Ientry##ivtNo.old();\
+			Ientry##ivtNo.callold();\
 		PCB::dispatch();\
     }
 
