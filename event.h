@@ -1,6 +1,7 @@
 #ifndef _event_h_
 #define _event_h_
 typedef unsigned char IVTNo;
+#include "prepare.h"
 class KernelEv;
 class Event
 {
