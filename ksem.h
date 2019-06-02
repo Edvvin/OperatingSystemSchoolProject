@@ -4,7 +4,6 @@
 #include "semqueue.h"
 #include "slpqueue.h"
 
-
 class KernelSem
 {
   public:

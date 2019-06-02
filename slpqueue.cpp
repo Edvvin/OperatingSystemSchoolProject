@@ -3,7 +3,7 @@
 #include "semqueue.h"
 #include "SCHEDULE.h"
 #include "ksem.h"
-
+#include "pcblst.h"
 SleepQueue::SleepQueue(){
     first = NULL;
 }
@@ -21,6 +21,7 @@ SleepQueue::~SleepQueue(){
 //TODO: prekontrolisi
 void SleepQueue::add(PCB* thread, Time t){
     Element* newElem = new Element();
+    newElem->next = NULL;
     newElem->val = thread;
     newElem->time = t;
     Element* temp = first;
@@ -64,6 +65,7 @@ unsigned SleepQueue::awaken(){
         Scheduler::put(temp->val);
         cnt++;
         delete temp;
+        temp = NULL;
         if(!first)
             break;
     }
@@ -81,6 +83,7 @@ unsigned SleepQueue::awakenAll(){
         Scheduler::put(temp->val);
         cnt++;
         delete temp;
+        temp = NULL;
 	}
 	return cnt;
 }

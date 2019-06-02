@@ -10,14 +10,14 @@ class Thread;
 class KernelSem;
 class SignalHandlerList;
 class SignalQueue;
-class KSemList;
 class PCBList;
+class KSemList;
 
 typedef unsigned char IVTNo;
 
 typedef void interrupt(*pointerInterrupt)(...); // Mozda u IVTEntry
 
-enum STATUS{READY, COMPLETED, BLOCKED, SLEEP, CREATED, IDLE};
+enum STATUS{READY, COMPLETED, BLOCKED, SLEEP, CREATED, IDLE, DESTROYED};
 
 class PCB
 {
@@ -33,16 +33,17 @@ class PCB
 
     static PCB* volatile running;
     static PCB* idle;
+    static Thread* mainPCBWrapper;
     static volatile unsigned lockFlag;
     static volatile unsigned contextSwitchFlag;
     static volatile unsigned signalFlag;
+    static volatile unsigned inSemSignal;
     unsigned sp;
     unsigned ss;
     unsigned bp;
-
     static unsigned dispatchFlag;
     KernelSem* sem;
-    static KSemList* kSemList;
+    static KSemList kSemList;
     static PCBList* pcbList;
 
     static void wrapper();
@@ -67,13 +68,11 @@ class PCB
     static pointerInterrupt oldTimer;
     static const IVTNo IVTNo_TIMER; // Mozda premestiti u IVTEntry
     static ID PID;
-    static SleepQueue sleepQ;
     SignalHandlerList* (regs[MAX_SIGNAL_COUNT]);
     static unsigned globBlocked[MAX_SIGNAL_COUNT];
     unsigned blocked[MAX_SIGNAL_COUNT];
     SignalQueue *signalQueue;
     PCB* parent;
-
     void signal(SignalId signal);
     void systemSignal(SignalId signal);
     void registerHandler(SignalId signal, SignalHandler handler);

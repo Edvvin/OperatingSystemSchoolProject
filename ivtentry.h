@@ -9,7 +9,6 @@ typedef void interrupt(*pointerInterrupt)(...);
 class KernelEv;
 
 class IVTEntry{
-
 	IVTNo ivtNo;
 	pointerInterrupt oldInterrupt;
     static IVTEntry* entries[IVT_SIZE];

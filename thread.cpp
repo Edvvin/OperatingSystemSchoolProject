@@ -41,7 +41,7 @@ void Thread::registerHandler(SignalId signal, SignalHandler handler){
     myPCB->registerHandler(signal,handler);
 }
 
-void Thread::unregisterAllHandlers(SignalID id){
+void Thread::unregisterAllHandlers(SignalId id){
     myPCB->unregisterAllHandlers(id);
 }
 

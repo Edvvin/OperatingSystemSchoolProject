@@ -2,6 +2,7 @@
 #include <dos.h>
 #include <stdlib.h>
 #include "kev.h"
+#include <assert.h>
 
 IVTEntry* IVTEntry::entries[IVT_SIZE];
 
@@ -13,7 +14,7 @@ IVTEntry::IVTEntry(IVTNo ivtNo, pointerInterrupt newInterrupt):ev(NULL){
 
 IVTEntry::~IVTEntry(){
     setvect(ivtNo, oldInterrupt);
-    old();
+    //old();
     //TODO: proveri je l treba delete ev ili old();
 }
 

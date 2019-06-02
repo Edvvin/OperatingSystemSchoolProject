@@ -34,7 +34,9 @@ void SignalHandlerList::unreg(){
 void SignalHandlerList::invoke(){
     Element* t = first;
     while(t != NULL){
+    	asm sti;
         (t->sh)();
+        asm cli;
         t = t->next;
     }
 }

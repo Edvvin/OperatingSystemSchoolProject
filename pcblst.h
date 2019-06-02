@@ -9,7 +9,7 @@ class PCBList{
 		Element *next;
 	};
 public:
-    Element *first, *end;
+	Element *first, *end;
 	PCBList();
 	~PCBList();
 	void put(PCB* val);

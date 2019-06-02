@@ -20,7 +20,6 @@ void SemQueue::put(PCB* thread){
 	Element* qe = new Element();
 	qe->val = thread;
 	qe->next = NULL;
-	qe->next = NULL;
 	if(first == NULL){
 		first = end = qe;
 	}

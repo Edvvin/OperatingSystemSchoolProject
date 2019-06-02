@@ -2,14 +2,17 @@
 #include "slpqueue.h"
 #include "SCHEDULE.H"
 #include "ksemlist.h"
-#include "assert.h"
+#include <assert.h>
 #include "lock.h"
+#include "pcblst.h"
+#include "pcb.h"
+
 KernelSem::KernelSem(int init, Semaphore* myS): value(init), mySem(myS){
-    PCB::kSemList->put((KernelSem*)this);
+    PCB::kSemList.put((KernelSem*)this);
 }
 KernelSem::~KernelSem(){
     if(value<0)signal(-value);
-    KSemList::Iterator it = PCB::kSemList->getIterator();
+    KSemList::Iterator it = PCB::kSemList.getIterator();
     while(!it.end()){
         if(it.get() == this){
             it.remove();
@@ -46,6 +49,7 @@ int KernelSem::signal(int n){
     int cnt = 0;
     if(n > 0){
         lock
+		PCB::inSemSignal = 1;
         while(cnt < n && value<0){
             value++;
             cnt++;
@@ -53,25 +57,24 @@ int KernelSem::signal(int n){
             if(!thread){
                 thread = sleepQ.getFirst();
             }
-            assert(thread != NULL); // TODO: ukoni
             thread->status = READY;
-            assert(thread->signaled == 1); // TODO: ukolni
             Scheduler::put(thread);
         }
         value += n-cnt;
+        PCB::inSemSignal = 0;
         unlock
     }else{
         lock
+		PCB::inSemSignal = 1;
         if(value++<0){
             PCB* thread = semq.get();
             if(!thread){
                 thread = sleepQ.getFirst();
             }
-            assert(thread != NULL); // TODO: ukolni
             thread->status = READY;
-            assert(thread->signaled == 1); // TODO: ukolni
             Scheduler::put(thread);
         }
+        PCB::inSemSignal = 0;
         unlock
     }
     return cnt;

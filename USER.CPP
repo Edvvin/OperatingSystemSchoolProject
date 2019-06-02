@@ -13,11 +13,13 @@
 #include "user.h"
 #include "Event.h"
 #include "semaphor.h"
+#include "pcblst.h"
+#include "pcb.h"
 
 //---------------------------------------------------------------------------//
 //  Otkomentarisati ukoliko se testiraju signali
 //---------------------------------------------------------------------------//
-// #define SIGNAL
+#define SIGNAL
 //---------------------------------------------------------------------------//
 
 //---------------------------------------------------------------------------//
@@ -49,7 +51,7 @@ private:
 };
 
 
-
+Producer **pro;
 //---------------------------------------------------------------------------//
 class Consumer : public Thread {
 public:
@@ -133,7 +135,6 @@ void signal1() {
 
 #endif
 
-
 int userMain (int argc, char* argv[])
 {
 	BoundedBuffer *buff;
@@ -163,7 +164,7 @@ int userMain (int argc, char* argv[])
 #endif
 
 	buff = new BoundedBuffer(buffSize);
-	Producer **pro = new Producer*[N];
+	pro = new Producer*[N];
 	KeyboardEvent* kev;
 	int i;
 	
@@ -199,8 +200,14 @@ int userMain (int argc, char* argv[])
 		signalTest.wait(0);
 	}
 #endif
-
-	for (i=0; i<N; i++){
+	delete pro[0];
+	PCBList::Iterator it = PCB::pcbList->getIterator();
+	while(!it.end()){
+		if(it.get() == pro[0])
+			assert(0);
+		it.next();
+	}
+	for (i=1; i<N; i++){
 		delete pro[i];
 	}  
 	delete [] pro;

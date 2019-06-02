@@ -3,6 +3,9 @@
 #include "thread.h"
 #include "pcb.h"
 
+class SemQueue;
+class QueueElement;
+
 class SleepQueue{
   struct Element{
     Time time;
@@ -19,5 +22,4 @@ class SleepQueue{
   private:
     Element *first;
 };
-
 #endif

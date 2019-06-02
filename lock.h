@@ -1,6 +1,7 @@
 #ifndef _lock_h_
 #define _lock_h_
 
+
 #define lock PCB::lockFlag++;
 
 #define unlock\

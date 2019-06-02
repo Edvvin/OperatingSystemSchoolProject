@@ -42,8 +42,12 @@ void PCBList::Iterator::remove(){
         return;
     if (prev != NULL) {
         prev->next = value->next;
+    }else{
+    	queue->first = value->next;
     }
     value = value->next;
+    if (value == NULL)
+    	queue->end = prev;
     delete t;
 }
 
