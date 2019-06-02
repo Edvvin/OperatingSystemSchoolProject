@@ -28,12 +28,12 @@ pointerInterrupt PCB::oldTimer = NULL;
 
 unsigned PCB::globBlocked[MAX_SIGNAL_COUNT];
 
-KSemList* kSemList = NULL;
-PCBList* pcbList = NULL;
+KSemList* PCB::kSemList = NULL;
+PCBList* PCB::pcbList = NULL;
 
-volatile unsigned lockFlag = 0;
-volatile unsigned contextSwitchFlag = 0;
-volatile unsigned signalFlag = 0;
+volatile unsigned PCB::lockFlag = 0;
+volatile unsigned PCB::contextSwitchFlag = 0;
+volatile unsigned PCB::signalFlag = 0;
 void interrupt myTimer(...);
 void interrupt killer(...);
 
@@ -211,9 +211,9 @@ void interrupt killer(...){
 	PCB::running->stack[PCB::running->stackSize-2] = FP_SEG(PCB::finalize); //PC
 	PCB::running->stack[PCB::running->stackSize-3] = FP_OFF(PCB::finalize);
     // push ax,bx,cx,dx,es,ds,si,di,bp
-	_SP = FP_OFF(stack + PCB::running->stackSize-12);
+	_SP = FP_OFF(PCB::running->stack + PCB::running->stackSize-12);
     _BP = _SP;
-	_SS = FP_SEG(stack + PCB::running->stackSize-12);
+	_SS = FP_SEG(PCB::running->stack + PCB::running->stackSize-12);
 }
 
 void interrupt myTimer(...){
@@ -237,7 +237,7 @@ void interrupt myTimer(...){
     //Timer stuff
     }
     if(PCB::lockFlag){
-        contextSwitchFlag = 1;
+        PCB::contextSwitchFlag = 1;
         return;
     }
     PCB::running->sp = _SP;
@@ -277,7 +277,7 @@ void PCB::signal(SignalId signal){
         PCB::handle();
 }
 
-void PCB::systemSignal(SignalID signal){
+void PCB::systemSignal(SignalId signal){
     signalQueue->put(signal);
     if(PCB::running == this  && !signalFlag ) //TODO: PROVERI OVO
         PCB::handle();
@@ -296,7 +296,9 @@ void PCB::unregisterAllHandlers(SignalId id){
 }
 
 void PCB::swap(SignalId id, SignalHandler hand1, SignalHandler hand2){
-    regs[signal]->swap(hand1,hand2);
+    if(id == 0)
+        return;
+    regs[id]->swap(hand1,hand2);
 }
 
 void PCB::blockSignal(SignalId signal){
@@ -315,7 +317,7 @@ void PCB::unblockSignal(SignalId signal){
 
 void PCB::unblockSignalGlobally(SignalId signal){
     globBlocked[signal] = 0;
-    if(PCB::running == this && !signalFlag)
+    if(!signalFlag)
         PCB::handle();
 }
 

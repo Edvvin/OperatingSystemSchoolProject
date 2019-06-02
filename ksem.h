@@ -2,6 +2,8 @@
 #define _ksem_h_
 #include "semaphor.h"
 #include "semqueue.h"
+#include "slpqueue.h"
+
 
 class KernelSem
 {

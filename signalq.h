@@ -10,9 +10,8 @@ class SignalQueue{
 		SignalId signal;
 		Element *next;
 	};
-
-	Element *first, *end;
 public:
+    Element *first, *end;
 	SignalQueue();
 	~SignalQueue();
 

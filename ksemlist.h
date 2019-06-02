@@ -10,9 +10,8 @@ class KSemList{
 		KernelSem* ksem;
 		Element *next;
 	};
-
-	Element *first, *end;
 public:
+    Element *first, *end;
 	KSemList();
 	~KSemList();
     void put(KernelSem* ksem);

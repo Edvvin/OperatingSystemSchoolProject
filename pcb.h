@@ -10,6 +10,8 @@ class Thread;
 class KernelSem;
 class SignalHandlerList;
 class SignalQueue;
+class KSemList;
+class PCBList;
 
 typedef unsigned char IVTNo;
 
